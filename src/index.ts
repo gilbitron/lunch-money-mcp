@@ -8,6 +8,7 @@ import { registerTransactionTools } from "./tools/transactions.js";
 import { registerRecurringTools } from "./tools/recurring.js";
 import { registerBudgetTools } from "./tools/budgets.js";
 import { registerAssetTools } from "./tools/assets.js";
+import { registerPlaidTools } from "./tools/plaid.js";
 
 // Load environment variables
 const apiToken = process.env.LUNCH_MONEY_API_TOKEN;
@@ -103,6 +104,7 @@ registerTransactionTools(mcpServer, client);
 registerRecurringTools(mcpServer, client);
 registerBudgetTools(mcpServer, client);
 registerAssetTools(mcpServer, client);
+registerPlaidTools(mcpServer, client);
 
 // Start FastMCP server
 mcpServer.start({

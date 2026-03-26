@@ -7,6 +7,8 @@ import {
   createTransactionSchema,
   updateTransactionSchema,
   bulkUpdateTransactionsSchema,
+  createTransactionGroupSchema,
+  unsplitTransactionsSchema,
   idSchema,
 } from "../schemas/index.js";
 import { TransactionsResponse, Transaction } from "../types/index.js";
@@ -25,6 +27,22 @@ export function registerTransactionTools(
         const response = await client.get<TransactionsResponse>(
           "/transactions",
           args
+        );
+        return JSON.stringify(response, null, 2);
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "getTransaction",
+    description: "Get a single transaction by ID",
+    parameters: idSchema,
+    execute: async (args: z.infer<typeof idSchema>) => {
+      try {
+        const response = await client.get<Transaction>(
+          `/transactions/${args.id}`
         );
         return JSON.stringify(response, null, 2);
       } catch (error) {
@@ -94,6 +112,71 @@ export function registerTransactionTools(
           args
         );
         return JSON.stringify(result, null, 2);
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "getTransactionGroup",
+    description: "Retrieve a transaction group with all child transactions",
+    parameters: idSchema,
+    execute: async (args: z.infer<typeof idSchema>) => {
+      try {
+        const response = await client.get<Transaction>(
+          "/transactions/group",
+          { transaction_id: args.id }
+        );
+        return JSON.stringify(response, null, 2);
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "createTransactionGroup",
+    description:
+      "Group multiple transaction IDs under a single parent transaction",
+    parameters: createTransactionGroupSchema,
+    execute: async (args: z.infer<typeof createTransactionGroupSchema>) => {
+      try {
+        const response = await client.post<Transaction>(
+          "/transactions/group",
+          args
+        );
+        return JSON.stringify(response, null, 2);
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "deleteTransactionGroup",
+    description:
+      "Delete a transaction group, restoring individual transactions",
+    parameters: idSchema,
+    execute: async (args: z.infer<typeof idSchema>) => {
+      try {
+        await client.delete(`/transactions/group/${args.id}`);
+        return `Transaction group ${args.id} deleted successfully`;
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "unsplitTransactions",
+    description:
+      "Reverse a split, merging child transactions back into parent",
+    parameters: unsplitTransactionsSchema,
+    execute: async (args: z.infer<typeof unsplitTransactionsSchema>) => {
+      try {
+        const response = await client.post("/transactions/unsplit", args);
+        return JSON.stringify(response, null, 2);
       } catch (error) {
         return formatErrorForMCP(error);
       }

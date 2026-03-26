@@ -151,6 +151,38 @@ export const updateAssetSchema = z.object({
   institution_name: z.string().optional(),
 });
 
+// Transaction group schemas
+export const createTransactionGroupSchema = z.object({
+  date: z.string(),
+  payee: z.string(),
+  transactions: z.array(z.number()).min(2),
+  category_id: z.number().optional(),
+  notes: z.string().optional(),
+  tags: z.array(z.number()).optional(),
+});
+
+export const unsplitTransactionsSchema = z.object({
+  parent_ids: z.array(z.number()).min(1),
+  remove_parents: z.boolean().optional(),
+});
+
+// Category group schemas
+export const createCategoryGroupSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  is_income: z.boolean().optional(),
+  exclude_from_budget: z.boolean().optional(),
+  exclude_from_totals: z.boolean().optional(),
+  category_ids: z.array(z.number()).optional(),
+  new_categories: z.array(z.string()).optional(),
+});
+
+export const addToGroupSchema = z.object({
+  group_id: z.number().int().positive(),
+  category_ids: z.array(z.number()).optional(),
+  new_categories: z.array(z.string()).optional(),
+});
+
 // ID parameter schemas
 export const idSchema = z.object({
   id: z.number().int().positive(),

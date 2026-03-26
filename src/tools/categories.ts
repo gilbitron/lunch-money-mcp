@@ -5,9 +5,11 @@ import { formatErrorForMCP } from "../utils/errors.js";
 import {
   createCategorySchema,
   updateCategorySchema,
+  createCategoryGroupSchema,
+  addToGroupSchema,
   idSchema,
 } from "../schemas/index.js";
-import { CategoriesResponse, Category } from "../types/index.js";
+import { CategoriesResponse, Category, CategoryGroup } from "../types/index.js";
 
 export function registerCategoryTools(
   server: FastMCP,
@@ -70,6 +72,56 @@ export function registerCategoryTools(
       try {
         await client.delete(`/categories/${args.id}`);
         return `Category ${args.id} deleted successfully`;
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "getCategory",
+    description: "Get a single category by ID",
+    parameters: idSchema,
+    execute: async (args: z.infer<typeof idSchema>) => {
+      try {
+        const category = await client.get<Category>(
+          `/categories/${args.id}`
+        );
+        return JSON.stringify(category, null, 2);
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "createCategoryGroup",
+    description: "Create a new category group with an optional list of category IDs",
+    parameters: createCategoryGroupSchema,
+    execute: async (args: z.infer<typeof createCategoryGroupSchema>) => {
+      try {
+        const response = await client.post<{ category_group: CategoryGroup }>(
+          "/categories/group",
+          args
+        );
+        return JSON.stringify(response, null, 2);
+      } catch (error) {
+        return formatErrorForMCP(error);
+      }
+    },
+  });
+
+  server.addTool({
+    name: "addToGroup",
+    description: "Add existing categories to a category group",
+    parameters: addToGroupSchema,
+    execute: async (args: z.infer<typeof addToGroupSchema>) => {
+      try {
+        const response = await client.post(
+          `/categories/group/${args.group_id}/add`,
+          { category_ids: args.category_ids }
+        );
+        return JSON.stringify(response, null, 2);
       } catch (error) {
         return formatErrorForMCP(error);
       }
