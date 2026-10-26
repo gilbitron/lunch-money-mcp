@@ -11,6 +11,13 @@ import {
 } from "../schemas/index.js";
 import { TransactionsResponse, Transaction } from "../types/index.js";
 
+function compactTransaction(transaction: Transaction) {
+  const { plaid_metadata, ...rest } = transaction as Transaction & { plaid_metadata?: unknown };
+  return Object.fromEntries(
+    Object.entries(rest).filter(([, value]) => value !== null && !(Array.isArray(value) && value.length === 0))
+  );
+}
+
 export function registerTransactionTools(
   server: FastMCP,
   client: LunchMoneyClient
@@ -26,7 +33,13 @@ export function registerTransactionTools(
           "/transactions",
           args
         );
-        return JSON.stringify(response, null, 2);
+        if (!response.transactions) {
+          throw new Error(JSON.stringify(response));
+        }
+        return JSON.stringify({
+          has_more: response.has_more,
+          transactions: response.transactions.map(compactTransaction),
+        });
       } catch (error) {
         return formatErrorForMCP(error);
       }
@@ -39,9 +52,9 @@ export function registerTransactionTools(
     parameters: createTransactionSchema,
     execute: async (args: z.infer<typeof createTransactionSchema>) => {
       try {
-        const transaction = await client.post<{ transaction: Transaction }>(
+        const transaction = await client.post<{ ids: number[] }>(
           "/transactions",
-          args
+          { transactions: [args] }
         );
         return JSON.stringify(transaction, null, 2);
       } catch (error) {
@@ -59,7 +72,7 @@ export function registerTransactionTools(
         const { id, ...updateData } = args;
         const transaction = await client.put<{ transaction: Transaction }>(
           `/transactions/${id}`,
-          updateData
+          { transaction: updateData }
         );
         return JSON.stringify(transaction, null, 2);
       } catch (error) {
@@ -89,11 +102,11 @@ export function registerTransactionTools(
     parameters: bulkUpdateTransactionsSchema,
     execute: async (args: z.infer<typeof bulkUpdateTransactionsSchema>) => {
       try {
-        const result = await client.post<{ updated: number }>(
-          "/transactions/bulk",
-          args
-        );
-        return JSON.stringify(result, null, 2);
+        const { transaction_ids, ...changes } = args;
+        for (const id of transaction_ids) {
+          await client.put(`/transactions/${id}`, { transaction: changes });
+        }
+        return JSON.stringify({ updated: transaction_ids.length });
       } catch (error) {
         return formatErrorForMCP(error);
       }
