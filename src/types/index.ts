@@ -141,6 +141,7 @@ export interface CategoriesResponse {
 
 export interface TransactionsResponse {
     transactions: Transaction[];
+    has_more?: boolean;
 }
 
 export interface TagsResponse {
